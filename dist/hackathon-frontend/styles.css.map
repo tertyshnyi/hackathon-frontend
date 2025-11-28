@@ -1,0 +1,1 @@
+{"version":3,"file":"styles.css","mappings":";;;AAAA;AACA;EAAO;EAA2C;EAAW;AAI7D,C","sources":["./src/styles.scss"],"sourcesContent":["/* global styles */\nbody { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; }\n"],"names":[],"sourceRoot":"webpack:///","x_google_ignoreList":[]}
