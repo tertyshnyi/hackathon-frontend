@@ -1,49 +1,48 @@
-# Node modules
-node_modules/
-package-lock.json
-npm-debug.log
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# Angular build output
+# compiled output
 /dist
-/out-tsc
 /tmp
+/out-tsc
 
-# IDEs
-.vscode/
-.idea/
+# dependencies
+/package-lock.json
+/node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
 *.sublime-workspace
-*.sublime-project
 
-# Logs
-logs
-*.log
-*.log.*
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# Environment files
-/src/environments/*.ts
-!src/environments/environment.ts
+# misc
+/.angular/cache
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+testem.log
+/typings
 
-# Mac/Windows system files
+# e2e
+/e2e/*.js
+/e2e/*.map
+
+# System Files
 .DS_Store
 Thumbs.db
-
-# Angular cache
-.angular/cache
-
-# Compiled output
-*.js
-*.js.map
-*.d.ts
-
-# Storybook
-storybook-static
-
-# Vite (if used)
-.vite/
-
-# Coverage reports
-coverage/
-
-# Misc
-*.bak
-*.swp
+/.vscode
+node/
+target/
+/prolik-ui.iml
