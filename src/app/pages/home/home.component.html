@@ -1,0 +1,93 @@
+<div class="container">
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <button class="hamburger-btn" (click)="toggleSidebar()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <span class="mobile-title">Explorer</span>
+    <div style="width: 40px;"></div>
+  </header>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" [class.active]="isSidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.open]="isSidebarOpen">
+    <div class="sidebar-header">
+      <button class="close-sidebar-btn" (click)="closeSidebar()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="new-chat-btn" (click)="clearSelection(); closeSidebar()">
+        <app-location-icon [size]="24"></app-location-icon>
+        <span>New Search</span>
+      </button>
+    </div>
+    
+    <div class="history-section">
+      <div class="history-label">Search History</div>
+      <div *ngIf="isLoading" class="loading-state">
+        <span class="loading-text">Loading...</span>
+      </div>
+      <ul *ngIf="!isLoading" class="history-list">
+        <li 
+          *ngFor="let item of historyItems"
+          class="history-item" 
+          [class.active]="selectedItem?.id === item.id"
+          (click)="selectItem(item); closeSidebar()">
+          <app-location-icon class="chat-icon" [size]="18"></app-location-icon>
+          <span class="history-title">{{ item.title }}</span>
+        </li>
+      </ul>
+      <div *ngIf="!isLoading && historyItems.length === 0" class="empty-state">
+        <span class="empty-text">No search history yet</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="chat-area">
+      <div *ngIf="selectedItem" class="selected-query">
+        <div class="query-header">
+          <span class="query-date">{{ selectedItem.date | date:'dd MMM yyyy, HH:mm' }}</span>
+        </div>
+        <div class="query-content">
+          <div class="user-message">
+            <div class="message-text">{{ selectedItem.query }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div *ngIf="!selectedItem" class="welcome-screen">
+        <div class="logo">
+          <app-location-icon [size]="64" [strokeWidth]="1.5"></app-location-icon>
+        </div>
+        <h1 class="welcome-title">Where would you like to go today?</h1>
+        <p class="welcome-subtitle">Discover places to visit, eat, or explore</p>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-container">
+        <textarea 
+          class="message-input"
+          [(ngModel)]="userInput"
+          placeholder="Search for places to visit, restaurants, attractions..."
+          (keydown.enter)="onEnter($event)"
+          (input)="autoResize($event)"
+          rows="1"></textarea>
+        <button class="send-btn" [disabled]="!userInput.trim()" (click)="sendMessage()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
