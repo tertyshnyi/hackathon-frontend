@@ -1,0 +1,27 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2 class="login-title">Welcome</h2>
+    
+    <div class="form-group">
+      <label class="form-label">Username:</label>
+      <input 
+        type="text" 
+        class="form-input"
+        [(ngModel)]="username"
+        (keydown.enter)="onEnter($event)"
+        placeholder="Enter your username"
+        [disabled]="isLoading">
+    </div>
+
+    <div *ngIf="error" class="error-message">{{ error }}</div>
+
+    <button 
+      class="login-btn" 
+      (click)="login()"
+      [disabled]="isLoading || !username.trim()">
+      <span *ngIf="!isLoading">Login</span>
+      <span *ngIf="isLoading">Logging in...</span>
+    </button>
+  </div>
+</div>
+
