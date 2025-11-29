@@ -4,11 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { HistoryService } from '../../core/services/history.service';
 import { HistoryItem } from '../../core/models/history.model';
 import { LocationIconComponent } from '../../shared/components/icons/location-icon.component';
+import { InputComponent } from '../../shared/components/input/input.component';
 
 @Component({
   standalone: true,
   selector: 'app-home',
-  imports: [CommonModule, FormsModule, LocationIconComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    LocationIconComponent,
+    InputComponent
+  ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

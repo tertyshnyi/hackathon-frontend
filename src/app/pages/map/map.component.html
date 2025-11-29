@@ -1,19 +1,30 @@
 <div class="map-wrapper">
-  <div #map class="map-container"></div>
-
   <div class="down-menu">
     <div class="place-list first">
-      <h2>List of places</h2>
+      <div class="header-row">
+        <h2>List of places</h2>
+        <div class="header-controls">
+          <select #mode>
+            <option value="DRIVING">🚗 Drive</option>
+            <option value="WALKING">🚶 Walk</option>
+          </select>
+        </div>
+      </div>
       <ul *ngIf="places && places.length > 0">
         <li *ngFor="let p of places; let i = index"
             (click)="focusPlace(i)"
             [ngClass]="{'active': activePlaceIndex === i}">
-          <strong>{{ p.name }}</strong> - <span>{{ p.address }}</span> <span>({{ p.reviews }})</span>
+          <strong>{{ p.name }}</strong> - <span>{{ p.address }}</span>
+          <span class="stars">
+            <ng-container *ngFor="let width of getStarWidths(p.reviews)">
+              <span class="star">
+                ★
+                <span class="star-fill" [style.width.%]="width">★</span>
+              </span>
+            </ng-container>
+            ({{ p.reviews.toFixed(1) }}) • {{ p.count_reviews }}
+          </span>
           <div class="navigate-controls">
-            <select #mode (click)="$event.stopPropagation()">
-              <option value="DRIVING">🚗 Drive</option>
-              <option value="WALKING">🚶 Walk</option>
-            </select>
             <button (click)="navigateToPlace(i, mode.value); $event.stopPropagation()">Navigate</button>
             <button 
               *ngIf="currentDestinationIndex === i"
@@ -27,9 +38,13 @@
       <p *ngIf="places && places.length === 0">No places found</p>
     </div>
     <div class="place-list second">
-      <div class="textarea-field"></div>
-      <input type="text" placeholder="Enter text to this field">
-      <p *ngIf="places && places.length === 0">No places found</p>
+      <!-- <div class="textarea-field"></div> -->
+      <app-input
+        [(userInput)]="userInput"
+        (send)="sendMessage()">
+      </app-input>
     </div>
   </div>
+
+  <div #map class="map-container"></div>
 </div>

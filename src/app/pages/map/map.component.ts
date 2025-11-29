@@ -2,11 +2,15 @@ import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular
 import { LocationService, Location } from '../../core/services/location.service';
 import { CommonModule } from '@angular/common';
 import { GoogleMapsLoaderService } from '../../core/services/google-maps-loader.service';
+import { InputComponent } from '../../shared/components/input/input.component';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-map',
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule,
+    InputComponent
   ],
   standalone: true,
   templateUrl: './map.component.html',
@@ -26,6 +30,7 @@ export class MapComponent implements OnInit {
   directionsRenderer!: google.maps.DirectionsRenderer;
   currentDestinationIndex: number | null = null;
   currentTravelMode: 'DRIVING' | 'WALKING' | null = null;
+  userInput = '';
 
   constructor(
     private googleLoader: GoogleMapsLoaderService,
@@ -259,5 +264,21 @@ export class MapComponent implements OnInit {
     this.activePlaceIndex = null;
     this.map.setZoom(13);
     this.map.panTo({ lat: 48.1486, lng: 17.1077 });
+  }
+
+  sendMessage() {
+    if (this.userInput.trim()) {
+      console.log('Search for:', this.userInput);
+      this.userInput = '';
+    }
+  }
+
+  getStarWidths(rating: number): number[] {
+    const stars: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const starFill = Math.min(Math.max(rating - i, 0), 1) * 100;
+      stars.push(starFill);
+    }
+    return stars;
   }
 }
