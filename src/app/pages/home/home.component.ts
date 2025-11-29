@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { HistoryService } from '../../core/services/history.service';
+import { AuthService } from '../../core/services/auth.service';
 import { HistoryItem } from '../../core/models/history.model';
 import { LocationIconComponent } from '../../shared/components/icons/location-icon.component';
-import { InputComponent } from '../../shared/components/input/input.component';
 
 @Component({
   standalone: true,
@@ -12,8 +13,7 @@ import { InputComponent } from '../../shared/components/input/input.component';
   imports: [
     CommonModule, 
     FormsModule, 
-    LocationIconComponent,
-    InputComponent
+    LocationIconComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
@@ -22,24 +22,46 @@ export class HomeComponent implements OnInit {
   userInput = '';
   selectedItem: HistoryItem | null = null;
   isSidebarOpen = false;
+  isUserMenuOpen = false;
   isLoading = true;
+  isSending = false;
   historyItems: HistoryItem[] = [];
 
-  constructor(private historyService: HistoryService) {}
+  constructor(
+    private historyService: HistoryService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadHistory();
   }
 
+  private getUserId(): string {
+    const user = this.authService.getCurrentUser();
+    return user?.id?.toString() || '';
+  }
+
+  get username(): string {
+    return this.authService.getCurrentUser()?.name || '';
+  }
+
   loadHistory(): void {
+    const userId = this.getUserId();
+    if (!userId) {
+      this.isLoading = false;
+      return;
+    }
+
     this.isLoading = true;
-    this.historyService.getHistory().subscribe({
+    this.historyService.getHistory(userId).subscribe({
       next: (items) => {
         this.historyItems = items;
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Failed to load history:', error);
+        this.historyItems = [];
         this.isLoading = false;
       }
     });
@@ -62,18 +84,35 @@ export class HomeComponent implements OnInit {
     this.isSidebarOpen = false;
   }
 
+  toggleUserMenu(): void {
+    this.isUserMenuOpen = !this.isUserMenuOpen;
+  }
+
+  closeUserMenu(): void {
+    this.isUserMenuOpen = false;
+  }
+
   sendMessage(): void {
-    if (this.userInput.trim()) {
-      const newItem: HistoryItem = {
-        id: Date.now(),
-        title: this.userInput.substring(0, 40) + (this.userInput.length > 40 ? '...' : ''),
-        query: this.userInput,
-        date: new Date()
-      };
-      this.historyItems.unshift(newItem);
-      this.selectedItem = newItem;
-      this.userInput = '';
-    }
+    const query = this.userInput.trim();
+    if (!query || this.isSending) return;
+
+    const userId = this.getUserId();
+    if (!userId) return;
+
+    this.isSending = true;
+
+    this.historyService.createSearch(userId, query).subscribe({
+      next: (newItem) => {
+        this.historyItems.unshift(newItem);
+        this.selectedItem = newItem;
+        this.userInput = '';
+        this.isSending = false;
+      },
+      error: (error) => {
+        console.error('Failed to create search:', error);
+        this.isSending = false;
+      }
+    });
   }
 
   onEnter(event: Event): void {
@@ -88,5 +127,16 @@ export class HomeComponent implements OnInit {
     const textarea = event.target as HTMLTextAreaElement;
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  getItemTitle(item: HistoryItem): string {
+    return item.query.length > 40 
+      ? item.query.substring(0, 40) + '...' 
+      : item.query;
   }
 }

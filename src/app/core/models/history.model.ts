@@ -1,11 +1,13 @@
 export interface HistoryItem {
   id: number;
-  title: string;
+  userId: string;
   query: string;
-  date: Date | string;
+  type: string;
+  createdAt?: string;
 }
 
-export interface HistoryResponse {
-  historyItems: HistoryItem[];
+export interface SearchRequest {
+  userId: string;
+  query: string;
+  type: string;
 }
-

@@ -1,24 +1,27 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, delay } from 'rxjs';
-import { HistoryItem, HistoryResponse } from '../models/history.model';
+import { Observable } from 'rxjs';
+import { HistoryItem, SearchRequest } from '../models/history.model';
+import { API_CONFIG } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HistoryService {
-  private readonly apiUrl = 'assets/history.json';
-
   constructor(private http: HttpClient) {}
 
-  getHistory(): Observable<HistoryItem[]> {
-    return this.http.get<HistoryResponse>(this.apiUrl).pipe(
-      delay(300), // Emulate network delay
-      map(response => response.historyItems.map(item => ({
-        ...item,
-        date: new Date(item.date)
-      })))
+  getHistory(userId: string): Observable<HistoryItem[]> {
+    return this.http.get<HistoryItem[]>(
+      `${API_CONFIG.baseUrl}/searches/history?userId=${userId}`
     );
   }
-}
 
+  createSearch(userId: string, query: string): Observable<HistoryItem> {
+    const body: SearchRequest = {
+      userId,
+      query,
+      type: 'map'
+    };
+    return this.http.post<HistoryItem>(`${API_CONFIG.baseUrl}/searches`, body);
+  }
+}

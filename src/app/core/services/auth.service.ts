@@ -5,7 +5,7 @@ import { API_CONFIG } from '../config/api.config';
 
 export interface User {
   id?: number;
-  username: string;
+  name: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,8 +30,8 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  login(username: string): Observable<User> {
-    return this.http.post<User>(`${API_CONFIG.baseUrl}/users`, { username }).pipe(
+  login(name: string): Observable<User> {
+    return this.http.post<User>(`${API_CONFIG.baseUrl}/users`, { name }).pipe(
       tap(user => {
         localStorage.setItem(this.storageKey, JSON.stringify(user));
         this.currentUserSubject.next(user);
