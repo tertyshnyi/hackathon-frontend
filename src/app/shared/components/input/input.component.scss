@@ -1,0 +1,75 @@
+/* Input Area Styles */
+.input-area {
+    padding: 16px 30px 24px;
+    display: flex;
+    justify-content: center;
+
+    .input-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: var(--bg-input);
+        border-radius: 16px;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        width: 100%;
+        max-width: 768px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+
+        &:focus-within {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            resize: none;
+            min-height: 24px;
+            line-height: 24px;
+            max-height: 200px;
+            text-align: left;
+            overflow-y: hidden;
+            display: block;
+            padding: 0;
+            margin: 0;
+
+            &::placeholder {
+                color: var(--text-muted);
+                line-height: 24px;
+            }
+        }
+
+        .send-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            align-self: center;
+
+            &:hover:not(:disabled) {
+                background-color: var(--accent-hover);
+            }
+
+            &:disabled {
+                background-color: var(--bg-hover);
+                color: var(--text-muted);
+                cursor: not-allowed;
+            }
+        }
+    }
+}
