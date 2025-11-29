@@ -1,0 +1,35 @@
+<div class="map-wrapper">
+  <div #map class="map-container"></div>
+
+  <div class="down-menu">
+    <div class="place-list first">
+      <h2>List of places</h2>
+      <ul *ngIf="places && places.length > 0">
+        <li *ngFor="let p of places; let i = index"
+            (click)="focusPlace(i)"
+            [ngClass]="{'active': activePlaceIndex === i}">
+          <strong>{{ p.name }}</strong> - <span>{{ p.address }}</span> <span>({{ p.reviews }})</span>
+          <div class="navigate-controls">
+            <select #mode (click)="$event.stopPropagation()">
+              <option value="DRIVING">🚗 Drive</option>
+              <option value="WALKING">🚶 Walk</option>
+            </select>
+            <button (click)="navigateToPlace(i, mode.value); $event.stopPropagation()">Navigate</button>
+            <button 
+              *ngIf="currentDestinationIndex === i"
+              class="exit-nav-btn"
+              (click)="exitNavigation(); $event.stopPropagation()">
+                Exit
+            </button>
+          </div>
+        </li>
+      </ul>
+      <p *ngIf="places && places.length === 0">No places found</p>
+    </div>
+    <div class="place-list second">
+      <div class="textarea-field"></div>
+      <input type="text" placeholder="Enter text to this field">
+      <p *ngIf="places && places.length === 0">No places found</p>
+    </div>
+  </div>
+</div>
