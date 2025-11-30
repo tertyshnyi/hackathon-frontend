@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { HistoryItem, SearchRequest } from '../models/history.model';
 import { API_CONFIG } from '../config/api.config';
+import { Coordinates } from './geolocation.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,11 +17,13 @@ export class HistoryService {
     );
   }
 
-  createSearch(userId: string, query: string): Observable<HistoryItem> {
+  createSearch(userId: string, query: string, location: Coordinates): Observable<HistoryItem> {
     const body: SearchRequest = {
       userId,
       query,
-      type: 'map'
+      type: 'map',
+      latitude: location.latitude,
+      longitude: location.longitude
     };
     return this.http.post<HistoryItem>(`${API_CONFIG.baseUrl}/searches`, body);
   }

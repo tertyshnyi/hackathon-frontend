@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { HistoryService } from '../../core/services/history.service';
 import { AuthService } from '../../core/services/auth.service';
+import { GeolocationService, Coordinates } from '../../core/services/geolocation.service';
 import { HistoryItem } from '../../core/models/history.model';
 import { LocationIconComponent } from '../../shared/components/icons/location-icon.component';
 
@@ -18,23 +20,38 @@ import { LocationIconComponent } from '../../shared/components/icons/location-ic
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   userInput = '';
   selectedItem: HistoryItem | null = null;
   isSidebarOpen = false;
   isUserMenuOpen = false;
   isLoading = true;
-  isSending = false;
   historyItems: HistoryItem[] = [];
+  currentLocation: Coordinates | null = null;
+  
+  private locationSubscription?: Subscription;
 
   constructor(
     private historyService: HistoryService,
     private authService: AuthService,
+    private geolocationService: GeolocationService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadHistory();
+    this.startLocationTracking();
+  }
+
+  ngOnDestroy(): void {
+    this.locationSubscription?.unsubscribe();
+  }
+
+  private startLocationTracking(): void {
+    this.geolocationService.startWatching();
+    this.locationSubscription = this.geolocationService.getPosition$().subscribe(position => {
+      this.currentLocation = position;
+    });
   }
 
   private getUserId(): string {
@@ -44,6 +61,10 @@ export class HomeComponent implements OnInit {
 
   get username(): string {
     return this.authService.getCurrentUser()?.name || '';
+  }
+
+  get hasLocation(): boolean {
+    return this.currentLocation !== null;
   }
 
   loadHistory(): void {
@@ -94,23 +115,35 @@ export class HomeComponent implements OnInit {
 
   sendMessage(): void {
     const query = this.userInput.trim();
-    if (!query || this.isSending) return;
+    if (!query) return;
 
     const userId = this.getUserId();
     if (!userId) return;
 
-    this.isSending = true;
+    if (!this.currentLocation) {
+      alert('Waiting for location. Please allow location access.');
+      return;
+    }
 
-    this.historyService.createSearch(userId, query).subscribe({
-      next: (newItem) => {
-        this.historyItems.unshift(newItem);
-        this.selectedItem = newItem;
-        this.userInput = '';
-        this.isSending = false;
-      },
-      error: (error) => {
-        console.error('Failed to create search:', error);
-        this.isSending = false;
+    // Navigate to map with query, userId and location - API call will happen there
+    this.router.navigate(['/map'], { 
+      state: { 
+        query: query,
+        userId: userId,
+        location: this.currentLocation,
+        isNewSearch: true
+      }
+    });
+    
+    this.userInput = '';
+  }
+
+  openInMap(item: HistoryItem): void {
+    // Open existing history item in map
+    this.router.navigate(['/map'], { 
+      state: { 
+        searchResult: item,
+        isNewSearch: false
       }
     });
   }

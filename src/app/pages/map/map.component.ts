@@ -1,9 +1,23 @@
-import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { LocationService, Location } from '../../core/services/location.service';
 import { CommonModule } from '@angular/common';
 import { GoogleMapsLoaderService } from '../../core/services/google-maps-loader.service';
 import { InputComponent } from '../../shared/components/input/input.component';
 import { FormsModule } from '@angular/forms';
+import { HistoryItem } from '../../core/models/history.model';
+import { HistoryService } from '../../core/services/history.service';
+import { AuthService } from '../../core/services/auth.service';
+import { GeolocationService, Coordinates } from '../../core/services/geolocation.service';
+
+interface NavigationState {
+  query?: string;
+  userId?: string;
+  location?: Coordinates;
+  isNewSearch?: boolean;
+  searchResult?: HistoryItem;
+}
 
 @Component({
   selector: 'app-map',
@@ -16,7 +30,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
-export class MapComponent implements OnInit {
+export class MapComponent implements OnInit, OnDestroy {
   @ViewChild('map', { static: true }) mapElement!: ElementRef;
   map!: google.maps.Map;
   places: Location[] = [];
@@ -31,16 +45,59 @@ export class MapComponent implements OnInit {
   currentDestinationIndex: number | null = null;
   currentTravelMode: 'DRIVING' | 'WALKING' | null = null;
   userInput = '';
+  
+  // Search state
+  searchResult: HistoryItem | null = null;
+  aiResponse: string = '';
+  isLoadingSearch: boolean = false;
+  searchQuery: string = '';
+  
+  // Location state
+  currentLocation: Coordinates | null = null;
+  private locationSubscription?: Subscription;
 
   constructor(
     private googleLoader: GoogleMapsLoaderService,
-    private locationService: LocationService
+    private locationService: LocationService,
+    private historyService: HistoryService,
+    private authService: AuthService,
+    private geolocationService: GeolocationService,
+    private router: Router
   ) {}
 
   async ngOnInit() {
-    await this.googleLoader.load();
+    // Start location tracking
+    this.startLocationTracking();
+    
+    // Get navigation state
+    const state = history.state as NavigationState;
+    
+    if (state?.isNewSearch && state.query && state.userId && state.location) {
+      // New search - make API call with location from home
+      this.searchQuery = state.query;
+      this.isLoadingSearch = true;
+      
+      this.historyService.createSearch(state.userId, state.query, state.location).subscribe({
+        next: (result) => {
+          this.searchResult = result;
+          this.aiResponse = result.aiResponse || '';
+          this.isLoadingSearch = false;
+          console.log('Search result:', result);
+          console.log('AI Response:', this.aiResponse);
+        },
+        error: (error) => {
+          console.error('Failed to create search:', error);
+          this.isLoadingSearch = false;
+        }
+      });
+    } else if (state?.searchResult) {
+      // Existing history item
+      this.searchResult = state.searchResult;
+      this.aiResponse = state.searchResult.aiResponse || '';
+      this.searchQuery = state.searchResult.query;
+    }
 
-    this.watchUserLocation();
+    await this.googleLoader.load();
 
     this.locationService.getLocations().subscribe(locations => {
       console.log('Locations from service:', locations);
@@ -73,66 +130,73 @@ export class MapComponent implements OnInit {
         this.markers.push(marker);
         this.infoWindows.push(infoWindow);
       });
+
+      // Update user marker when location changes
+      this.updateUserMarkerOnMap();
     });
-  }
-
-  private watchUserLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(
-        position => {
-          const userPos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-
-          if (!this.userMarker) {
-            this.userMarker = new google.maps.Marker({
-              position: userPos,
-              map: this.map,
-              title: 'You are here',
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: '#1b5e20',
-                fillOpacity: 1,
-                strokeColor: '#fff',
-                strokeWeight: 2
-              }
-            });
-
-            this.map.panTo(userPos);
-          } else {
-            const startPos = this.userMarker.getPosition()!;
-            const deltaLat = (userPos.lat - startPos.lat()) / 10;
-            const deltaLng = (userPos.lng - startPos.lng()) / 10;
-            let step = 0;
-            const animate = setInterval(() => {
-              step++;
-              const nextLat = startPos.lat() + deltaLat * step;
-              const nextLng = startPos.lng() + deltaLng * step;
-              this.userMarker!.setPosition({ lat: nextLat, lng: nextLng });
-              if (step >= 10) clearInterval(animate);
-            }, 50);
-          }
-
-          if (this.currentDestinationIndex !== null && this.currentTravelMode) {
-            this.updateRoute(this.currentDestinationIndex, this.currentTravelMode);
-          }
-        },
-        error => {
-          console.error('Geolocation error:', error);
-        },
-        { enableHighAccuracy: true }
-      );
-    } else {
-      console.error('Geolocation is not supported by this browser.');
-    }
   }
 
   ngOnDestroy() {
     if (this.blinkInterval) {
       clearInterval(this.blinkInterval);
     }
+    this.locationSubscription?.unsubscribe();
+  }
+
+  private startLocationTracking(): void {
+    this.geolocationService.startWatching();
+    this.locationSubscription = this.geolocationService.getPosition$().subscribe(position => {
+      this.currentLocation = position;
+      this.updateUserMarkerOnMap();
+    });
+  }
+
+  private updateUserMarkerOnMap(): void {
+    if (!this.currentLocation || !this.map) return;
+
+    const userPos = {
+      lat: this.currentLocation.latitude,
+      lng: this.currentLocation.longitude
+    };
+
+    if (!this.userMarker) {
+      this.userMarker = new google.maps.Marker({
+        position: userPos,
+        map: this.map,
+        title: 'You are here',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#1b5e20',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2
+        }
+      });
+
+      this.map.panTo(userPos);
+    } else {
+      const startPos = this.userMarker.getPosition()!;
+      const deltaLat = (userPos.lat - startPos.lat()) / 10;
+      const deltaLng = (userPos.lng - startPos.lng()) / 10;
+      let step = 0;
+      const animate = setInterval(() => {
+        step++;
+        const nextLat = startPos.lat() + deltaLat * step;
+        const nextLng = startPos.lng() + deltaLng * step;
+        this.userMarker!.setPosition({ lat: nextLat, lng: nextLng });
+        if (step >= 10) clearInterval(animate);
+      }, 50);
+    }
+
+    if (this.currentDestinationIndex !== null && this.currentTravelMode) {
+      this.updateRoute(this.currentDestinationIndex, this.currentTravelMode);
+    }
+  }
+
+  private getUserId(): string {
+    const user = this.authService.getCurrentUser();
+    return user?.id?.toString() || '';
   }
 
   focusPlace(index: number) {
@@ -267,10 +331,38 @@ export class MapComponent implements OnInit {
   }
 
   sendMessage() {
-    if (this.userInput.trim()) {
-      console.log('Search for:', this.userInput);
-      this.userInput = '';
+    const query = this.userInput.trim();
+    if (!query) return;
+
+    const userId = this.getUserId();
+    if (!userId) return;
+
+    if (!this.currentLocation) {
+      alert('Waiting for location. Please allow location access.');
+      return;
     }
+
+    this.searchQuery = query;
+    this.isLoadingSearch = true;
+    this.userInput = '';
+
+    this.historyService.createSearch(userId, query, this.currentLocation).subscribe({
+      next: (result) => {
+        this.searchResult = result;
+        this.aiResponse = result.aiResponse || '';
+        this.isLoadingSearch = false;
+        console.log('Search result:', result);
+        console.log('AI Response:', this.aiResponse);
+      },
+      error: (error) => {
+        console.error('Failed to create search:', error);
+        this.isLoadingSearch = false;
+      }
+    });
+  }
+
+  goBack() {
+    this.router.navigate(['/']);
   }
 
   getStarWidths(rating: number): number[] {
